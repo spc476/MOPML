@@ -1,0 +1,18 @@
+
+                       My Own Private Markup Language
+                                     or
+                                    MOPML
+
+  I came up with my own markup language to make writing blog posts easier
+while still leaving the ability to drop down to HTML if I really need it. 
+This isn't even close to being Markdown, Org mode or TeX, but a horrible
+mishmash of the three, with my own custom addtions.  You are not expected to
+understand, nor even use this, but hey, if you feel it's useful, go right
+ahead.  But I won't accept any patches since this is for my own use.  Fork
+away.  The only reason I have it publically available is that I do, on
+occasion, reference this in online discussions and I would like to have some
+place to point to when discussing my opinions on markup languages.
+
+  You have been warned.
+
+  Thank you and have a nice day.
