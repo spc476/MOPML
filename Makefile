@@ -1,0 +1,5 @@
+
+.PHONY: clean
+
+clean:
+	$(RM) *~
