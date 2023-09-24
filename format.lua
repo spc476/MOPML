@@ -576,7 +576,7 @@ local begin_quote = Cmt(
                         state.quote.via_url   = nil
                         state.quote.via_title = nil
                         
-                        return pos,string.format("%s\n</blockquote>\n",par or "")
+                        return pos,string.format("</blockquote>\n\n%s",par or "")
                       end
                     )
                     
