@@ -191,6 +191,7 @@ local abbrex = C("IPv4")
              + C("NaNoWriMo")
              + C("NaNoGenMo")
              + C("I/O")
+             + P"AD&D" / "AD&amp;D"
              + P"D&D5" / "D&amp;D5"
              + P"D&D"  / "D&amp;D"
              + P"K&R"  / "K&amp;R"
