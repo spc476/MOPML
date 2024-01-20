@@ -244,6 +244,8 @@ local tex = P"``"    / ENTITY.ldquo
           + P"\\&"   / "&amp;"
           + P"\\<"   / "&lt;"
           + P"\\/"   / "/"
+          + P"!?"    / "\u{203D}"
+          + P"?!"    / "\u{203D}"
           + fraction("1/4",'frac12')
           + fraction("1/2",'frac12')
           + fraction("3/4",'frac34')
