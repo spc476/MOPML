@@ -95,11 +95,9 @@ tempus neque ultrices interdum.  Praesent fermentum vitae metus et iaculis.
 Aliquam a {{tincidunt ante}}.  Cras ullamcorper neque sit amet metus
 sagittis venenatis.  Praesent rutrum egestas dictum.
 
-#+ATTR_QUOTE: :cite http://boston.conman.org/2019/04/08.2
-#+ATTR_QUOTE: :title Why the web went bad
-#+ATTR_QUOTE: :via-url http://www.example.net/links-today/2018/04/12
-#+ATTR_QUOTE: :via-title Link's O' the Day
 #+quote
+#cite	http://boston.conman.org/2019/04/08.2 Why the web went bad
+#via	http://www.example.net/links-today/2018/04/12 Link's O' the Day
 
 In my opinion, the point where HTTP and HTML “went off the rails” into the
 current trainwreck of the modern web happened when browsers gained the

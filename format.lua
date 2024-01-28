@@ -407,8 +407,8 @@ local begin_src = C(S" \t"^0) * C(R("AZ","az")^1) * C(P"\n")
 --      1(<sol> <text>      0(<ht> <text>) <eol> ) -- data row
 --      <sol> '#-table' <eol>
 --
--- Note:	If <text> starts with '\f' then it represents a header
---		field within a data row.
+-- Note:        If <text> starts with '\f' then it represents a header
+--              field within a data row.
 -- ********************************************************************
 
 local int           = P"0" + (R"19" * R"09"^0)
@@ -493,96 +493,125 @@ local begin_email = Cc'\n<blockquote>\n  <dl class="header">' * email_opt^-1 * P
 -- #+quote
 --
 --      <sol> #+quote
+--	[<sol> #cite ('-' / URL) ('-' / 1*VCHAR)]
+--	[<sol> #via  ('-' / URL) ('-' / 1*VCHAR)]
 --      <text>
 --      <sol> #-quote
 --
 -- ********************************************************************
 
-local title_char  = P"&" / "&amp;"
-                  + P"<" / "&lt;"
-                  + P">" / "&gt;"
-                  + P'"' / "&quot;"
-                  + allchar
-local title_text  = Cs(title_char^1)
-local quote_text  = header + htmltag + abbr + tex + entity + link
-                  + cut + style
-                  + para
-                  + (allchar - P"#-quote")
-local begin_quote = Cmt(
-                      Carg(1),
-                      function(_,pos,state)
-                        local htag = '\n<blockquote'
-                        if state.quote.cite then
-                          htag = htag .. string.format(" cite=%q",title_text:match(state.quote.cite))
-                        end
-                        if state.quote.title then
-                          htag = htag .. string.format(" title=%q",title_text:match(state.quote.title))
-                        end
-                        htag = htag .. ">"
-                        return pos,htag
-                      end
-                    )
-                  * quote_text^0
-                  * Cmt(
-                      P"#-quote" * #P"\n" * Carg(1),
-                      function(_,pos,state)
-                        local via
-                        local cite
-                        local par
-                        
-                        if state.quote.via_url and state.quote.via_title then
-                          via = string.format(
+local title_char   = P"&" / "&amp;"
+                   + P"<" / "&lt;"
+                   + P">" / "&gt;"
+                   + P'"' / "&quot;"
+                   + allchar
+local title_text   = Cs(title_char^1)
+local quote_text   = header + htmltag + abbr + tex + entity + link
+                   + cut + style
+                   + para
+                   + (allchar - P"#-quote")
+local quote_totext = tex + entity + abnf.HTAB / " " + (uchar - P"\n")
+local quote_title  = Cs(quote_totext^1)
+local quote_cite   = Cmt(
+                       P"\n#cite"
+                       * Carg(1)
+                       * S" \t"^1
+                       * (P"-" * Cc(false) + urltext) * S" \t"^1
+                       * (P"-" * Cc(false) + quote_title),
+                       function(_,pos,state,where,text)
+                         state.quote.cite = where
+                         state.quote.title = text
+                         return pos,""
+                       end
+                     )
+local quote_via    = Cmt(
+                       P"\n#via"
+                       * Carg(1)
+                       * S" \t"^1
+                       * (P"-" * Cc(false) + urltext) * S" \t"^1
+                       * (P"-" * Cc(false) + quote_title),
+                       function(_,pos,state,where,text)
+                         state.quote.via_url = where
+                         state.quote.via_title = text
+                         return pos,""
+                       end
+                     )
+local handle_quote = Cmt(
+                       Carg(1),
+                       function(_,pos,state)
+                         local htag = '\n<blockquote'
+                         if state.quote.cite then
+                           htag = htag .. string.format(" cite=%q",title_text:match(state.quote.cite))
+                         end
+                         if state.quote.title then
+                           htag = htag .. string.format(" title=%q",title_text:match(state.quote.title))
+                         end
+                         htag = htag .. ">"
+                         return pos,htag
+                       end
+                     )
+                   * quote_text^0
+                   * Cmt(
+                       P"#-quote" * #P"\n" * Carg(1),
+                       function(_,pos,state)
+                         local via
+                         local cite
+                         local par
+                         
+                         if state.quote.via_url and state.quote.via_title then
+                           via = string.format(
                               [[Via <a class="%s" href="%s">%s</a>, ]],
                               url_class(state.quote.via_url),
                               state.quote.via_url,
                               state.quote.via_title
-                          )
-                        elseif state.quote.via_url and not state.quote.via_title then
-                          via = string.format(
+                           )
+                         elseif state.quote.via_url and not state.quote.via_title then
+                           via = string.format(
                               [[Via <code><a class="%s" href="%s">%s</a></code>, ]],
                               url_class(state.quote.via_url),
                               state.quote.via_url,
                               state.quote.via_url
-                          )
-                        elseif not state.quote.via_url and state.quote.via_title then
-                          via = string.format([[Via %s, ]],state.quote.via_title)
-                        end
-                        
-                        if state.quote.cite and state.quote.title then
-                          cite = string.format(
+                           )
+                         elseif not state.quote.via_url and state.quote.via_title then
+                           via = string.format([[Via %s, ]],state.quote.via_title)
+                         end
+                         
+                         if state.quote.cite and state.quote.title then
+                           cite = string.format(
                               [[<cite><a class="%s" href="%s">%s</a></cite>]],
                               url_class(state.quote.cite),
                               state.quote.cite,
                               state.quote.title
-                          )
-                        elseif state.quote.cite and not state.quote.title then
-                          cite = string.format(
+                           )
+                         elseif state.quote.cite and not state.quote.title then
+                           cite = string.format(
                               [[<cite><code><a class="%s" href="%s">%s</a></code></cite>]],
                               url_class(state.quote.cite),
                               state.quote.cite,
                               state.quote.cite
-                          )
-                        elseif not state.quote.cite and state.quote.title then
-                          cite = string.format([[<cite>%s</cite>]],state.quote.title)
-                        end
-                        
-                        if via or cite then
-                          par = string.format(
+                           )
+                         elseif not state.quote.cite and state.quote.title then
+                           cite = string.format([[<cite>%s</cite>]],state.quote.title)
+                         end
+                         
+                         if via or cite then
+                           par = string.format(
                               '<p class="cite">%s%s</p>',
                               via or "",
                               cite or ""
-                          )
-                        end
-                        
-                        state.quote.cite      = nil
-                        state.quote.title     = nil
-                        state.quote.via_url   = nil
-                        state.quote.via_title = nil
-                        
-                        return pos,string.format("</blockquote>\n\n%s",par or "")
-                      end
-                    )
-                    
+                           )
+                         end
+                         
+                         state.quote.cite      = nil
+                         state.quote.title     = nil
+                         state.quote.via_url   = nil
+                         state.quote.via_title = nil
+                         
+                         return pos,string.format("</blockquote>\n\n%s",par or "")
+                       end
+                     )
+local begin_quote  = (quote_cite + quote_via)^0 * handle_quote
+
 -- ********************************************************************
 -- #+photo
 --
@@ -639,31 +668,6 @@ local begin_pf = #P"\n" * Cc'\n<div class="pf">\n'
                * (P"\n#-photo" * #P"\n" / "</div>")
                
 -- ********************************************************************
--- #+ATTR_QUOTE
---
---      <sol> '#+ATTR_QUOTE:' <sp> [<cite> | <title> | <via-url> | <via-title> ] <eol>
---
---      <cite>      -> ':cite'      <sp> <url>
---      <title>     -> ':title'     <sp> <text>
---      <via-url>   -> ':via-url'   <sp> <url>
---      <via-title> -> ':via-title' <sp> <text>
---
--- NOTE:        Only one attribute per #+ATTR_QUOTE is supported.
---              Multiple #+ATTR_QUOTE lines can be specified
--- ********************************************************************
-
-local quote_attrs = P":cite"      / "cite"
-                  + P":title"     / "title"
-                  + P":via-url"   / "via_url"
-                  + P":via-title" / "via_title"
-local attr_quote  = S" \t"^1 / ""
-                  * Cmt(Carg(1) * quote_attrs * C(S" \t"^1) * C((allchar - P"\n")^1),
-                    function(_,pos,state,cite,_,text)
-                      state.quote[cite] = text
-                      return pos,""
-                    end)
-                    
--- ********************************************************************
 -- Top level #+BEGIN blocks definition
 -- ********************************************************************
 
@@ -672,9 +676,7 @@ local begin  = P"source"   / "" * begin_src
              + P"email"    / "" * begin_email
              + P"quote"    / "" * begin_quote
              + P"photo"    / "" * begin_pf
-local battr  = P"_QUOTE:"  / "" * attr_quote
 local blocks = P"\n#+"     / "" * begin
-             + P"\n#+ATTR" / "" * battr
              
 -- ********************************************************************
 -- Entry header
