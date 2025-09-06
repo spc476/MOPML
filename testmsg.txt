@@ -6,6 +6,21 @@ email: no
 abbr:	HTML	HyperText Markup Language
 	HTTP	HyperText Transport Protocol
 	TLA	Three Letter Acronym
+	IPv4	Internet Protocol version 4
+	IPv6	Internet Protocol version 6
+	IP	Internet Protocol
+	GHz	Gigahertz
+	MHz	Megahertz
+	POP3	Post Office Protocol version 3
+	D&D5	Dungeon &amp; Dragons version 5
+	AD&D	Advanced Dungeons and Dragons
+	D&D	Dungeon &amp; Dragons
+	K&R	Kerninghan &amp; Ritchie
+	AT&T	American Telegraph and Telephone
+	NaNoWriMo	National Novel Writing Month
+	NaNoGenMo	National Novel Generating Month
+	I/O		Input/Output
+	mDNS		Multicast Domain Name System
 filter: none
 
 Lorem ipsum dolor sit amet, <i>consectetur adipiscing *elit*</i>, sed do
@@ -149,6 +164,27 @@ test.png	test.gif
 	alt=Another small picture of ... something
 	title=This is yet another &rarr; test of the stuff
 #-photo
+
+And a list of acronyms:
+HTML,
+HTML,
+TLA,
+IP,
+IPv4,
+IPv6,
+GHz,
+MHz,
+POP3,
+D&D5,
+D&D,
+AD&D,
+K&R,
+AT&T,
+NaNoWriMo,
+NaNoGenMo,
+I/O,
+mDNS,
+and that's it.
 
 Sean Conner /
 122 Main St. /
