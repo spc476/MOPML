@@ -12,10 +12,10 @@ abbr:	HTML	HyperText Markup Language
 	GHz	Gigahertz
 	MHz	Megahertz
 	POP3	Post Office Protocol version 3
-	D&D5	Dungeon &amp; Dragons version 5
-	AD&D	Advanced Dungeons and Dragons
-	D&D	Dungeon &amp; Dragons
-	K&R	Kerninghan &amp; Ritchie
+	D&D5	Dungeon & Dragons version 5
+	AD&D	Advanced Dungeons & Dragons
+	D&D	Dungeon & Dragons
+	K&R	Kerninghan & Ritchie
 	AT&T	American Telegraph and Telephone
 	NaNoWriMo	National Novel Writing Month
 	NaNoGenMo	National Novel Generating Month
@@ -167,7 +167,7 @@ test.png	test.gif
 
 And a list of acronyms:
 HTML,
-HTML,
+HTTP,
 TLA,
 IP,
 IPv4,
