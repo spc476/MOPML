@@ -105,7 +105,7 @@ local entity = P"&amp;"
 local entry_header,abbr do
   local function make_abbr(state)
     table.sort(state.abbr,function(a,b)
-      return #a.abbr > #b.abbr
+      return #a.match > #b.match
     end)
     
     local char   = P"&" / "&amp;"
@@ -114,36 +114,69 @@ local entry_header,abbr do
     local entify = Cs(char^0)
     
     for _,rule in ipairs(state.abbr) do
-      abbr = abbr + P(rule.abbr)
+      abbr = abbr + P(rule.match)
                   / string.format(
                       '<abbr title="%s">%s</abbr>',
                       entify:match(rule.expansion),
-                      entify:match(rule.abbr)
+                      entify:match(rule.replace)
                     )
     end
   end
   
-  abbr           = P(false)
-  local sol      = P"\n"^-1
-  local echar    = tex + entity + uchar
-  local acronyms = (P"\n"^-1 * S" \t"^1) / ""
-                 * Cmt(
-                          Cs(echar^1)
-                        * S" \t"^1
-                        * Cs(echar^1)
-                        * Carg(1),
-                        function(_,pos,abrev,expansion,state)
-                          table.insert(state.abbr,{ abbr = abrev , expansion = expansion })
-                          return pos,""
-                        end)
-  local abbrh    = ((sol * P"abbr:") / "" * acronyms^1)
-                 * Cmt(
-                        Carg(1),
-                        function(_,pos,state)
-                          make_abbr(state)
-                          return pos,""
-                        end)
-                        
+  abbr            = P(false)
+  local sol       = P"\n"^-1
+  local echar     = tex + entity + uchar
+  local acronyms  = (P"\n"^-1 * S" \t"^1) / ""
+                  * Cmt(
+                           Cs(echar^1)
+                         * S" \t"^1
+                         * Cs(echar^1)
+                         * Carg(1),
+                         function(_,pos,abrev,expansion,state)
+                           table.insert(
+                             state.abbr,
+                             {
+                               match     = abrev,
+                               replace   = abrev,
+                               expansion = expansion,
+                             }
+                           )
+                           return pos,""
+                         end)
+  local acronyms2 = (P"\n"^-1 * S" \t"^1) / ""
+                  * Cmt(
+                           Cs(echar^1)
+                         * S" \t"^1
+                         * Cs(echar^1)
+                         * S" \t"^1
+                         * Cs(echar^1)
+                         * Carg(1),
+                         function(_,pos,match,replace,expansion,state)
+                           table.insert(
+                             state.abbr,
+                             {
+                               match     = match,
+                               replace   = replace,
+                               expansion = expansion,
+                             }
+                           )
+                           return pos,""
+                         end)
+  local abbrh     = ((sol * P"abbr:") / "" * acronyms^1)
+                  * Cmt(
+                         Carg(1),
+                         function(_,pos,state)
+                           make_abbr(state)
+                           return pos,""
+                         end)
+  local abbr2h    = ((sol * P"abbr2:") / "" * acronyms2^1)
+                  * Cmt(
+                         Carg(1),
+                         function(_,pos,state)
+                           make_abbr(state)
+                           return pos,""
+                         end)
+                         
   local author   = sol * C"author:" * Cs(uchar^0)
   local title    = sol * C"title:"  * Cs(echar^0)
   local class    = sol * C"class:"  * Cs(echar^0)
@@ -162,6 +195,7 @@ local entry_header,abbr do
                      + email
                      + filter
                      + abbrh
+                     + abbr2h
                    )^0)
                    * (Carg(1) / make_abbr)
                    * Cp()

@@ -21,6 +21,9 @@ abbr:	HTML	HyperText Markup Language
 	NaNoGenMo	National Novel Generating Month
 	I/O		Input/Output
 	mDNS		Multicast Domain Name System
+abbr2:	IRAr	IRA	International Realtors Association
+	IRAa	IRA	Irish Republican Army
+	IRAm	IRA	Individual Retirement Account
 filter: none
 
 Lorem ipsum dolor sit amet, <i>consectetur adipiscing *elit*</i>, sed do
@@ -184,6 +187,9 @@ NaNoWriMo,
 NaNoGenMo,
 I/O,
 mDNS,
+IRAr,
+IRAa,
+IRAm
 and that's it.
 
 Sean Conner /
