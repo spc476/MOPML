@@ -32,12 +32,156 @@ local lpeg    = require "lpeg"
 local Carg = lpeg.Carg
 local Cmt  = lpeg.Cmt
 local Cc   = lpeg.Cc
+local Cp   = lpeg.Cp
 local Cs   = lpeg.Cs
 local B    = lpeg.B
 local C    = lpeg.C
 local P    = lpeg.P
 local R    = lpeg.R
 local S    = lpeg.S
+
+-- ********************************************************************
+-- Base character definitions required for both headers and body
+-- ********************************************************************
+
+local function fraction(text,name)
+  return B(P(1) - R"09") * P(text) * #(P(1) - R"09")
+       / ENTITY[name]
+end
+
+local tex = P"``"    / ENTITY.ldquo
+          + P"''"    / ENTITY.rdquo
+          + P"-----" / "<hr>"
+          + P"---"   / ENTITY.mdash
+          + P"--"    / ENTITY.ndash
+          + P"(TM)"  / ENTITY.trade
+          + P"(C)"   / ENTITY.copy
+          + P"(R)"   / ENTITY.reg
+          + P"..."   / ENTITY.hellip
+          + P".."    / ENTITY.nldr
+          + P"<-"    / ENTITY.LeftArrow
+          + P"->"    / ENTITY.RightArrow
+          + P"^st"   / "<sup>st</sup>"
+          + P"^nd"   / "<sup>nd</sup>"
+          + P"^rd"   / "<sup>rd</sup>"
+          + P"^th"   / "<sup>th</sup>"
+          + P"\\-"   / ENTITY.shy
+          + P"\\_"   / ENTITY.nbsp
+          + P"\\ "   / ""
+          + P" /\n"  / "<br>\n"
+          + P"\\&"   / "&amp;"
+          + P"\\<"   / "&lt;"
+          + P"\\/"   / "/"
+          + P"!?"    / "\u{203D}"
+          + P"?!"    / "\u{203D}"
+          + fraction("1/4",'frac14')
+          + fraction("1/2",'frac12')
+          + fraction("3/4",'frac34')
+          + fraction("1/3",'frac13')
+          + fraction("2/3",'frac23')
+          + fraction("1/5",'frac15')
+          + fraction("2/5",'frac25')
+          + fraction("3/5",'frac35')
+          + fraction("4/5",'frac45')
+          + fraction("1/6",'frac16')
+          + fraction("5/6",'frac56')
+          + fraction("1/8",'frac18')
+          + fraction("3/8",'frac38')
+          + fraction("5/8",'frac58')
+          + fraction("7/8",'frac78')
+          + C"\\" * C(uchar) / "%2"
+          
+local entity = P"&amp;"
+             + P"&lt;"
+             + P"&quot;"
+             + P"&apos;"
+             + P"&#" * C(R"09"^1)             * P";" / utf8.char
+             + P"&"  * C(R("az","AZ","09")^1) * P";" / ENTITY
+
+-- ********************************************************************
+-- Entry header
+-- ********************************************************************
+
+local entry_header,abbr do
+  local function make_abbr(state)
+    table.sort(state.abbr,function(a,b)
+      return #a.abbr > #b.abbr
+    end)
+    
+    local char   = P"&" / "&amp;"
+                 + P"<" / "&lt;"
+                 + P(1)
+    local entify = Cs(char^0)
+    
+    for _,rule in ipairs(state.abbr) do
+      abbr = abbr + P(rule.abbr)
+                  / string.format(
+                      '<abbr title="%s">%s</abbr>',
+                      entify:match(rule.expansion),
+                      entify:match(rule.abbr)
+                    )
+    end
+  end
+  
+  abbr           = P(false)
+  local sol      = P"\n"^-1
+  local echar    = tex + entity + uchar
+  local acronyms = (P"\n"^-1 * S" \t"^1) / ""
+                 * Cmt(
+                          Cs(echar^1)
+                        * S" \t"^1
+                        * Cs(echar^1)
+                        * Carg(1),
+                        function(_,pos,abrev,expansion,state)
+                          table.insert(state.abbr,{ abbr = abrev , expansion = expansion })
+                          return pos,""
+                        end)
+  local abbrh    = ((sol * P"abbr:") / "" * acronyms^1)
+                 * Cmt(
+                        Carg(1),
+                        function(_,pos,state)
+                          make_abbr(state)
+                          return pos,""
+                        end)
+                        
+  local author   = sol * C"author:" * Cs(uchar^0)
+  local title    = sol * C"title:"  * Cs(echar^0)
+  local class    = sol * C"class:"  * Cs(echar^0)
+  local status   = sol * C"status:" * Cs(echar^0)
+  local date     = sol * C"date:"   * uchar^0
+  local adtag    = sol * C"adtag:"  * Cs(echar^0)
+  local email    = sol * C"email:"  * uchar^0
+  local filter   = sol * C"filter:" * uchar^0
+  entry_header   = Cs((
+                       author
+                     + title
+                     + class
+                     + status
+                     + date
+                     + adtag
+                     + email
+                     + filter
+                     + abbrh
+                   )^0)
+                   * (Carg(1) / make_abbr)
+                   * Cp()
+end
+
+-- ********************************************************************
+-- Read in the header section.  We do this here because we need to define
+-- the acronyms before the body section can use them.
+-- ********************************************************************
+
+local STATE =
+{
+  email_all = false,
+  stack     = {},
+  quote     = {},
+  abbr      = {},
+}
+
+local DATA    = io.stdin:read("*a")
+local HDR,POS = entry_header:match(DATA,1,STATE)
 
 -- ********************************************************************
 -- usage:       for chunk,data in jpeg_sections(file) do ... end
@@ -174,106 +318,6 @@ end
 
 -- ********************************************************************
 
-        -- ----------------------------------------
-        -- acronym expansion into
-        --    <abbr title="expansion">ABBR</abbr>
-        -- ----------------------------------------
-        
-local abbrex = C("IPv4")
-             + C("IPv6")
-             + C("GHz")
-             + C("MHz")
-             + C("POP3")
-             + C("D&amp;D5")
-             + C("D&amp;D")
-             + C("K&amp;R")
-             + C("AT&amp;T")
-             + C("NaNoWriMo")
-             + C("NaNoGenMo")
-             + C("I/O")
-             + P"AD&D" / "AD&amp;D"
-             + P"D&D5" / "D&amp;D5"
-             + P"D&D"  / "D&amp;D"
-             + P"K&R"  / "K&amp;R"
-             + P"AT&T" / "AT&amp;T"
-             + C("mDNS")
-             + C(R"AZ" * ((R"ax" * #R"AZ") + R"AZ")^1)
-local abbr   = Cmt(
-                  abbrex * Carg(1),
-                  function(_,pos,acronym,state)
-                    if state.abbr[acronym] then
-                      return pos,string.format('<abbr title="%s">%s</abbr>',
-                        state.abbr[acronym],
-                        acronym
-                      )
-                    else
-                      return pos
-                    end
-                  end
-                )
-                
-        -- ------------------
-        -- simple substutions
-        -- ------------------
-        
-local function fraction(text,name)
-  return B(P(1) - R"09") * P(text) * #(P(1) - R"09")
-       / ENTITY[name]
-end
-
-local tex = P"``"    / ENTITY.ldquo
-          + P"''"    / ENTITY.rdquo
-          + P"-----" / "<hr>"
-          + P"---"   / ENTITY.mdash
-          + P"--"    / ENTITY.ndash
-          + P"(TM)"  / ENTITY.trade
-          + P"(C)"   / ENTITY.copy
-          + P"(R)"   / ENTITY.reg
-          + P"..."   / ENTITY.hellip
-          + P".."    / ENTITY.nldr
-          + P"<-"    / ENTITY.LeftArrow
-          + P"->"    / ENTITY.RightArrow
-          + P"^st"   / "<sup>st</sup>"
-          + P"^nd"   / "<sup>nd</sup>"
-          + P"^rd"   / "<sup>rd</sup>"
-          + P"^th"   / "<sup>th</sup>"
-          + P"\\-"   / ENTITY.shy
-          + P"\\_"   / ENTITY.nbsp
-          + P"\\ "   / ""
-          + P" /\n"  / "<br>\n"
-          + P"\\&"   / "&amp;"
-          + P"\\<"   / "&lt;"
-          + P"\\/"   / "/"
-          + P"!?"    / "\u{203D}"
-          + P"?!"    / "\u{203D}"
-          + fraction("1/4",'frac14')
-          + fraction("1/2",'frac12')
-          + fraction("3/4",'frac34')
-          + fraction("1/3",'frac13')
-          + fraction("2/3",'frac23')
-          + fraction("1/5",'frac15')
-          + fraction("2/5",'frac25')
-          + fraction("3/5",'frac35')
-          + fraction("4/5",'frac45')
-          + fraction("1/6",'frac16')
-          + fraction("5/6",'frac56')
-          + fraction("1/8",'frac18')
-          + fraction("3/8",'frac38')
-          + fraction("5/8",'frac58')
-          + fraction("7/8",'frac78')
-          + C"\\" * C(uchar) / "%2"
-          
-        -- -----------------------------------------
-        -- convert HTML entities to UTF-8 characters
-        -- -----------------------------------------
-        
-local entity = P"&amp;"
-             + P"&lt;"
-             + P"&quot;"
-             + P"&apos;"
-             + P"&#" * C(R"09"^1)             * P";" / utf8.char
-             + P"&"  * C(R("az","AZ","09")^1) * P";" / ENTITY
-             
         -- --------------------------------------------------------------
         -- Redact data.  Format: {{redacted data}}
         --
@@ -680,45 +724,6 @@ local begin  = P"source"   / "" * begin_src
 local blocks = P"\n#+"     / "" * begin
              
 -- ********************************************************************
--- Entry header
--- ********************************************************************
-
-local entry_header do
-  local sol      = P"\n"^-1
-  local echar    = tex + entity + uchar
-  local acronyms = (P"\n"^-1 * S" \t"^1) / ""
-                 * Cmt(
-                          abbrex
-                        * C(S" \t"^1)
-                        * C(tex + entity + uchar^1)
-                        * Carg(1),
-                        function(_,pos,abrev,_,expansion,state)
-                          state.abbr[abrev] = expansion
-                          return pos,""
-                        end)
-  local abbrh    = (sol * P"abbr:") / "" * acronyms^1
-  local author   = sol * P"author:" * Cs(uchar^0)
-  local title    = sol * P"title:"  * Cs(echar^0)
-  local class    = sol * P"class:"  * Cs(echar^0)
-  local status   = sol * P"status:" * Cs(echar^0)
-  local date     = sol * P"date:"   * uchar^0
-  local adtag    = sol * P"adtag:"  * Cs(echar^0)
-  local email    = sol * P"email:"  * uchar^0
-  local filter   = sol * P"filter:" * uchar^0
-  entry_header   = (
-                       author
-                     + title
-                     + class
-                     + status
-                     + date
-                     + adtag
-                     + email
-                     + filter
-                     + abbrh
-                   )^0
-end
-
--- ********************************************************************
 
 local char = blocks
            + header
@@ -728,17 +733,9 @@ local char = blocks
            + cut + style
            + para
            + allchar
-local text = Cs(entry_header * char^0)
+local text = Cs(char^0)
 
 -- ********************************************************************
 
-local state =
-{
-  email_all = false,
-  stack     = {},
-  quote     = {},
-  abbr      = {},
-}
-
-local data = io.stdin:read("*a")
-io.stdout:write(text:match(data,1,state))
+local BODY = text:match(DATA,POS,STATE)
+io.stdout:write(HDR,BODY)
