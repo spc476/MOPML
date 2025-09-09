@@ -177,25 +177,25 @@ local entry_header,abbr do
                            return pos,""
                          end)
                          
-  local author   = sol * C"author:" * Cs(uchar^0)
-  local title    = sol * C"title:"  * Cs(echar^0)
-  local class    = sol * C"class:"  * Cs(echar^0)
-  local status   = sol * C"status:" * Cs(echar^0)
-  local date     = sol * C"date:"   * uchar^0
-  local adtag    = sol * C"adtag:"  * Cs(echar^0)
-  local email    = sol * C"email:"  * uchar^0
-  local filter   = sol * C"filter:" * uchar^0
-  entry_header   = Cs((
-                       author
-                     + title
-                     + class
-                     + status
-                     + date
-                     + adtag
-                     + email
-                     + filter
-                     + abbrh
-                     + abbr2h
+  local author = sol * C"author:" * Cs(uchar^0)
+  local title  = sol * C"title:"  * Cs(echar^0)
+  local class  = sol * C"class:"  * Cs(echar^0)
+  local status = sol * C"status:" * Cs(echar^0)
+  local date   = sol * C"date:"   * uchar^0
+  local adtag  = sol * C"adtag:"  * Cs(echar^0)
+  local email  = sol * C"email:"  * uchar^0
+  local filter = sol * C"filter:" * uchar^0
+  entry_header = Cs((
+                        author
+                      + title
+                      + class
+                      + status
+                      + date
+                      + adtag
+                      + email
+                      + filter
+                      + abbrh
+                      + abbr2h
                    )^0)
                    * (Carg(1) / make_abbr)
                    * Cp()
@@ -440,10 +440,10 @@ local value     = P'"' * htmlchard^0 * P'"'
 local attr      = P"title" *  EQ * htmltrans
                 + P"alt"   *  EQ * htmltrans
                 + aname    * (EQ * value)^-1
-local attrs     = SPACE^0 * attr
-local htmltag   = P"<"    * tag * attrs^0 * SPACE^0 * P">"
-                + P"<!--" * (P(1) - P"-->")^0 * P"-->"
-                + P"</"   * tag * P">"
+local attrs     = SPACE^0  * attr
+local htmltag   = P"<"     * tag * attrs^0 * SPACE^0 * P">"
+                + P"<!--"  * (P(1) - P"-->")^0 * P"-->"
+                + P"</"    * tag * P">"
                 
         -- -----------------------------
         -- Shorthand for <H1> .. <H5>
@@ -750,12 +750,12 @@ local begin_pf = #P"\n" * Cc'\n<div class="pf">\n'
 -- Top level #+BEGIN blocks definition
 -- ********************************************************************
 
-local begin  = P"source"   / "" * begin_src
-             + P"table"    / "" * begin_table
-             + P"email"    / "" * begin_email
-             + P"quote"    / "" * begin_quote
-             + P"photo"    / "" * begin_pf
-local blocks = P"\n#+"     / "" * begin
+local begin  = P"source" / "" * begin_src
+             + P"table"  / "" * begin_table
+             + P"email"  / "" * begin_email
+             + P"quote"  / "" * begin_quote
+             + P"photo"  / "" * begin_pf
+local blocks = P"\n#+"   / "" * begin
              
 -- ********************************************************************
 
